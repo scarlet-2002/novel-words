@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Novel Words</title>
+  <meta name="description" content="Collect words from the novels you read and review them with spaced repetition." />
+  <meta name="theme-color" content="#f6f3ee" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#1b1a18" media="(prefers-color-scheme: dark)" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Novel Words" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "preact": "https://cdn.jsdelivr.net/npm/preact@10.24.3/+esm",
+      "preact/hooks": "https://cdn.jsdelivr.net/npm/preact@10.24.3/hooks/+esm",
+      "htm": "https://cdn.jsdelivr.net/npm/htm@3.1.1/+esm",
+      "dexie": "https://cdn.jsdelivr.net/npm/dexie@4.0.8/+esm",
+      "fuse": "https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/+esm",
+      "supabase": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="app"><div class="boot">Loading…</div></div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Novel Words tests</title>
+<style>body{font:14px/1.5 -apple-system,sans-serif;padding:20px;background:#fff;color:#222}.ok{color:#2a7a3f}.bad{color:#b02a1a;font-weight:600}</style></head>
+<body><h1>Unit tests</h1><pre id="out"></pre>
+<script type="module">
+import { rate, newProgress, isDue, stageFor, addDays, INTERVALS } from './js/srs.js';
+import { findTarget, makeCloze, grade, inflections } from './js/cloze.js';
+const out = document.getElementById('out');
+let pass = 0, fail = 0;
+function eq(name, got, want) {
+  const ok = JSON.stringify(got) === JSON.stringify(want);
+  ok ? pass++ : fail++;
+  out.innerHTML += `<span class="${ok ? 'ok' : 'bad'}">${ok ? '✓' : '✗'} ${name}${ok ? '' : ` — got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}</span>\n`;
+}
+const T = '2026-11-23';
+// ---- dates
+eq('addDays month rollover', addDays('2026-11-30', 1), '2026-12-01');
+eq('addDays negative', addDays('2026-01-01', -1), '2025-12-31');
+// ---- srs stage 1
+let w = { ...newProgress(T) };
+eq('new word due today', isDue(w, 'default', T), true);
+let r = rate(w, 1, 'familiar', 'default', T); w = { ...w, ...r };
+eq('familiar → level 1, due +1', [w.s1.level, w.s1.due], [1, '2026-11-24']);
+r = rate(w, 1, 'familiar', 'default', '2026-11-24'); w = { ...w, ...r };
+eq('familiar → level 2, due +2', [w.s1.level, w.s1.due, w.stage], [2, '2026-11-26', 1]);
+r = rate(w, 1, 'familiar', 'default', '2026-11-26'); w = { ...w, ...r };
+eq('3rd familiar promotes to stage 2', [w.stage, r.promoted, w.s2.due], [2, true, '2026-11-27']);
+eq('stage2_all mode uses s2', stageFor({ stage: 1 }, 'stage2_all'), 2);
+eq('stage1_all mode uses s1', stageFor({ stage: 2 }, 'stage1_all'), 1);
+let u = { ...newProgress(T) };
+r = rate(u, 1, 'unfamiliar', 'default', T);
+eq('unfamiliar → requeue, level 0, due today', [r.requeue, r.s1.level, r.s1.due], [true, 0, T]);
+r = rate({ ...u, s1: { ...u.s1, level: 4 } }, 1, 'soso', 'default', T);
+eq('soso keeps level, due tomorrow', [r.s1.level, r.s1.due], [4, '2026-11-24']);
+r = rate({ ...u, stage: 1 }, 1, 'familiar', 'stage1_all', T);
+eq('no promotion outside default mode', r.promoted, false);
+// stage 2 demotion
+let s2w = { ...newProgress(T), stage: 2 };
+r = rate(s2w, 2, 'unfamiliar', 'default', T); s2w = { ...s2w, ...r };
+eq('one stage-2 miss stays stage 2', s2w.stage, 2);
+r = rate(s2w, 2, 'unfamiliar', 'default', T); s2w = { ...s2w, ...r };
+eq('two stage-2 misses demote', [s2w.stage, r.demoted, r.requeue], [1, true, false]);
+eq('intervals', INTERVALS, [0, 1, 2, 4, 7, 15, 30, 60]);
+// ---- cloze
+eq('inflection studies', inflections('study').has('studies'), true);
+eq('inflection stopped', inflections('stop').has('stopped'), true);
+eq('find inflected word', findTarget('She was prejudiced against him.', 'prejudice')?.[0].text, 'prejudiced');
+eq('find irregular', findTarget('He took after his father.', 'take after')?.map(s => s.text), ['took after']);
+eq('find split phrase', findTarget('Do not put it off any longer.', 'put off')?.map(s => s.text), ['put', 'off']);
+eq('find curly apostrophe', findTarget('It is a truth universally acknowledged.', 'acknowledge')?.[0].text, 'acknowledged');
+eq('no false match', findTarget('The cat sat.', 'dog'), null);
+const word = { text: 'acquiesce', source_sentence: 'Elizabeth acquiesced in silence.', senses: [{ def_en: 'accept reluctantly', example_en: 'He will acquiesce.' }] };
+const c = makeCloze(word);
+eq('cloze prefers source sentence', [c.kind, c.blanked, c.answer], ['sentence', 'Elizabeth _____ in silence.', 'acquiesced']);
+eq('grade exact', grade('acquiesced', c, 'acquiesce'), 'familiar');
+eq('grade case-insensitive', grade(' Acquiesced ', c, 'acquiesce'), 'familiar');
+eq('grade base form = soso', grade('acquiesce', c, 'acquiesce'), 'soso');
+eq('grade typo = soso', grade('acquiesed', c, 'acquiesce'), 'soso');
+eq('grade wrong', grade('agreed', c, 'acquiesce'), 'unfamiliar');
+eq('grade empty', grade('', c, 'acquiesce'), 'unfamiliar');
+const c2 = makeCloze({ text: 'zephyr', senses: [{ def_en: 'a gentle breeze', def_zh: '微风', example_en: '' }] });
+eq('definition fallback', [c2.kind, c2.answer], ['definition', 'zephyr']);
+eq('definition fallback grade', grade('zephyr', c2, 'zephyr'), 'familiar');
+const c3 = makeCloze({ text: 'put off', senses: [{ example_en: 'Never put it off till tomorrow.' }] });
+eq('split phrase cloze', [c3.blanked, c3.answer], ['Never _____ it _____ till tomorrow.', 'put off']);
+eq('split phrase grade', grade('put off', c3, 'put off'), 'familiar');
+out.innerHTML = `<b>${pass} passed, ${fail} failed</b>\n\n` + out.innerHTML;
+document.title = `${pass} passed, ${fail} failed`;
+</script></body></html>
